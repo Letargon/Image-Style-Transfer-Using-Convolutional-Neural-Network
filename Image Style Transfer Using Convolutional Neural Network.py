@@ -1,11 +1,16 @@
 """Image Style Transfer Using Convolutional Neural Network
 code Written in python, Ui made with PyQt5"""
+import os
+os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import QThread, pyqtSignal
 import logo
 import threading
 
+
+STYLE_LOSS_K = 0.1
+CONTENT_LOSS_K = 1.
 # global variables created to control the UI and code parameters.
 global content_path
 global style_path
@@ -447,13 +452,13 @@ class Ui_MainWindow(object):
         import numpy as np
         from PIL import Image
         import tensorflow as tf
-        import tensorflow.contrib.eager as tfe
+        import tensorflow.python.eager as tfe
         from tensorflow.python.keras.preprocessing import image as kp_image
         from tensorflow.python.keras import models
 
         # Eager execution is a flexible machine learning platform for research and experimentation.
         # Since we're using eager our model is callable just like any other function.
-        tf.enable_eager_execution()
+        #tf.enable_eager_execution()
         print("Eager execution: {}".format(tf.executing_eagerly()))
 
         # define calc to the external thread.
@@ -608,7 +613,7 @@ class Ui_MainWindow(object):
                                style_path,
                                num_iterations=1000,
                                content_weight=1e3,
-                               style_weight=1e-2):
+                               style_weight=0):
             # We don't train any layers of our model, so we set their trainable to false.
             model = get_model()
             for layer in model.layers:
@@ -620,9 +625,10 @@ class Ui_MainWindow(object):
 
             # Set initial image
             init_image = load_and_process_img(content_path)
-            init_image = tfe.Variable(init_image, dtype=tf.float32)
+            init_image = tf.Variable(init_image, dtype=tf.float32)
+
             # We  use Adam Optimizer
-            opt = tf.train.AdamOptimizer(learning_rate=5, beta1=0.99, epsilon=1e-1)
+            opt = tf.compat.v1.train.AdamOptimizer(learning_rate=5, beta1=0.99, epsilon=1e-1)
 
             # Store our best result
             best_loss, best_img = float('inf'), None
